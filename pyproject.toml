@@ -5,6 +5,10 @@ description = "State handler for python-telegram-bot library"
 authors = ["Vlad Pastushenko <iam@vladpi.me>"]
 license = "Apache License 2.0"
 
+packages = [
+    { include = "state_handler"},
+]
+
 [tool.poetry.dependencies]
 python = "^3.6"
 python-dotenv = "^0.14.0"
