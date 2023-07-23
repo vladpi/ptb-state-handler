@@ -2,7 +2,7 @@ from collections import defaultdict
 from typing import TYPE_CHECKING, Any, Dict, List, Optional
 
 from telegram import Chat
-from telegram.ext import CallbackContext, Dispatcher, Handler
+from telegram.ext import CallbackContext, Application, BaseHandler, ConversationHandler
 
 from .state import State
 
@@ -10,11 +10,11 @@ if TYPE_CHECKING:
     from telegram import Update
 
 
-class StateHandler(Handler):
+class StateHandler(BaseHandler):
     BACK = '_back'
 
     def __init__(
-        self, entry_point: Handler, states: List[State], allow_reentry: bool = True
+        self, entry_point: BaseHandler, states: List[State], allow_reentry: bool = True
     ):
         super().__init__(...)
         self.entry_point = entry_point
@@ -47,10 +47,10 @@ class StateHandler(Handler):
         else:
             return True
 
-    def handle_update(
+    async def handle_update(
         self,
         update: 'Update',
-        dispatcher: 'Dispatcher',
+        application: 'Application',
         check_result: Any,
         context: Optional['CallbackContext'] = None,
     ):
@@ -59,16 +59,16 @@ class StateHandler(Handler):
         reentry = self.allow_reentry and self.entry_point.check_update(update)
 
         if reentry or not user_state:
-            new_state_key = self.entry_point.handle_update(
-                update, dispatcher, check_result, context
+            new_state_key = await self.entry_point.handle_update(
+                update, application, check_result, context
             )
             self.__clear_user_states(user_id)
 
         else:
-            new_state_key = user_state.handle(update, dispatcher, context)
+            new_state_key = await user_state.handle(update, application, context)
 
         if new_state_key:
-            self.activate_state(user_id, new_state_key, update, context)
+            await self.activate_state(user_id, new_state_key, update, context)
 
     def _get_current_user_state(self, update: 'Update'):
         user = update.effective_user
@@ -82,7 +82,7 @@ class StateHandler(Handler):
 
         return user.id, None
 
-    def activate_state(
+    async def activate_state(
         self, user_id: int, state_key: str, update: 'Update', context: 'CallbackContext'
     ):
         if state_key == self.BACK:
@@ -92,10 +92,10 @@ class StateHandler(Handler):
         state = self.states.get(state_key, None)
 
         if state:
-            result_state_key = state.activate(update, context)
+            result_state_key = await state.activate(update, context)
 
             if result_state_key:
-                self.activate_state(user_id, result_state_key, update, context)
+                await self.activate_state(user_id, result_state_key, update, context)
 
             else:
                 self.__set_user_state(user_id, state_key)

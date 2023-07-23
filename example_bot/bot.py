@@ -2,34 +2,36 @@ import os
 
 from dotenv import load_dotenv
 from telegram import Update
-from telegram.ext import CallbackContext, CommandHandler, Dispatcher, Updater
+from telegram.ext import (
+    Application,
+    CallbackContext,
+    CommandHandler,
+)
 
 from example_bot import states_names
 from example_bot.states import about_state, contacts_state, main_menu_state
 from state_handler import StateHandler
 
 
-def entry(update: 'Update', context: 'CallbackContext'):
+async def entry(update: "Update", context: "CallbackContext"):
     return states_names.MAIN_MENU
 
 
 def main():
     load_dotenv()
-    bot_token = os.getenv('BOT_TOKEN', 'PLACE_YOU_BOT_TOKEN_HERE')
+    bot_token = os.getenv("BOT_TOKEN", "<PLACE_YOUR_BOT_TOKEN_HERE>")
 
-    updater = Updater(bot_token, use_context=True)
-    dp: Dispatcher = updater.dispatcher
+    application = Application.builder().token(bot_token).build()
 
     state_handler = StateHandler(
-        entry_point=CommandHandler('start', entry),
+        entry_point=CommandHandler("start", entry),
         states=[main_menu_state, about_state, contacts_state],
     )
 
-    dp.add_handler(state_handler)
+    application.add_handler(state_handler)
 
-    updater.start_polling()
-    updater.idle()
+    application.run_polling(allowed_updates=Update.ALL_TYPES)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main()

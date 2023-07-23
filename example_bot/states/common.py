@@ -7,5 +7,5 @@ if TYPE_CHECKING:
     from telegram.ext import CallbackContext
 
 
-def back(update: 'Update', context: 'CallbackContext'):
+async def back(update: "Update", context: "CallbackContext"):
     return StateHandler.BACK
